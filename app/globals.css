@@ -81,6 +81,122 @@ a {
 }
 
 /* ======================================================
+   NUMERIC KEYPAD
+   ====================================================== */
+
+.gate-form.shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-6px); }
+  30%, 60%, 90% { transform: translateX(6px); }
+}
+
+.numpad-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.numpad-dots {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.numpad-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--gray-300);
+  background: transparent;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.numpad-dot.active {
+  background-color: var(--black);
+  border-color: var(--black);
+  transform: scale(1.15);
+}
+
+.numpad-dot.error {
+  background-color: var(--danger);
+  border-color: var(--danger);
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  justify-items: center;
+  margin-top: 0.5rem;
+}
+
+.numpad-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-200);
+  background: var(--white);
+  color: var(--black);
+  font-size: 1.6rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  user-select: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.numpad-btn:hover:not(:disabled) {
+  background-color: var(--gray-50);
+  border-color: var(--gray-400);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.numpad-btn:active:not(:disabled) {
+  background-color: var(--gray-200);
+  border-color: var(--gray-500);
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.numpad-btn.btn-action {
+  font-size: 0.775rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.numpad-btn.btn-action:hover:not(:disabled) {
+  background-color: var(--gray-100);
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.numpad-btn.btn-action:active:not(:disabled) {
+  background-color: var(--gray-200);
+  transform: none;
+}
+
+.numpad-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* ======================================================
    APP SHELL
    ====================================================== */
 
