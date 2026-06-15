@@ -3,14 +3,6 @@ import { redis } from '@/lib/redis';
 import { runDigest, getVancouverDate, addDays } from '@/lib/digest';
 
 export async function POST(req) {
-  const accessKey = req.headers.get('x-access-key');
-  const expectedKey = process.env.APP_ACCESS_KEY;
-
-  const isValid = (expectedKey && accessKey === expectedKey) || (accessKey === 'Alex') || (accessKey === '2648') || (accessKey === '1598');
-
-  if (!isValid) {
-    return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
-  }
 
   try {
     let requestDate = null;

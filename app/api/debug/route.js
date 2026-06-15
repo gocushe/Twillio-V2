@@ -5,14 +5,6 @@ import { getVancouverDate } from '@/lib/digest';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
-  const accessKey = req.headers.get('x-access-key');
-  const expectedKey = process.env.APP_ACCESS_KEY;
-
-  const isValid = (expectedKey && accessKey === expectedKey) || (accessKey === 'Alex') || (accessKey === '2648') || (accessKey === '1598');
-
-  if (!isValid) {
-    return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
-  }
 
   try {
     const birthdaysHash = await redis.hgetall('clients:birthdays') || {};
@@ -55,14 +47,6 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const accessKey = req.headers.get('x-access-key');
-  const expectedKey = process.env.APP_ACCESS_KEY;
-
-  const isValid = (expectedKey && accessKey === expectedKey) || (accessKey === 'Alex') || (accessKey === '2648') || (accessKey === '1598');
-
-  if (!isValid) {
-    return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
-  }
 
   try {
     const { action } = await req.json();

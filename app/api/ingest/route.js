@@ -8,14 +8,6 @@ import {
 } from '@/lib/sanitize';
 
 export async function POST(req) {
-  const accessKey = req.headers.get('x-access-key');
-  const expectedKey = process.env.APP_ACCESS_KEY;
-
-  const isValid = (expectedKey && accessKey === expectedKey) || (accessKey === 'Alex') || (accessKey === '2648') || (accessKey === '1598');
-
-  if (!isValid) {
-    return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
-  }
 
   try {
     const body = await req.json();

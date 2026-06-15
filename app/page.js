@@ -5,13 +5,8 @@ import Papa from 'papaparse';
 
 export default function Dashboard() {
   // Auth
-  const [accessKey, setAccessKey] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [checkingAuth, setCheckingAuth] = useState(false);
-  const [passcode, setPasscode] = useState('');
-  const [isShaking, setIsShaking] = useState(false);
-  const [isErrorState, setIsErrorState] = useState(false);
+  const [accessKey, setAccessKey] = useState('Alex');
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   // Navigation
   const [mainTab, setMainTab] = useState('dashboard');
@@ -49,74 +44,7 @@ export default function Dashboard() {
     setLogs(prev => [...prev, { type, text, time }]);
   };
 
-  // ── Auth ─────────────────────────────────────────────────────────────
-  const submitPasscode = async (code) => {
-    setCheckingAuth(true);
-    setAuthError('');
-    setIsErrorState(false);
-    try {
-      const res = await fetch('/api/debug', { headers: { 'x-access-key': code } });
-      if (res.ok) {
-        const data = await res.json();
-        setAccessKey(code);
-        setIsAuthenticated(true);
-        updateState(data);
-        addLog('system', 'Session started. Connected to Redis.');
-      } else {
-        setIsErrorState(true);
-        setIsShaking(true);
-        setAuthError('Invalid passcode.');
-        setTimeout(() => {
-          setPasscode('');
-          setIsShaking(false);
-          setIsErrorState(false);
-        }, 800);
-      }
-    } catch {
-      setAuthError('Could not reach server.');
-    } finally {
-      setCheckingAuth(false);
-    }
-  };
-
-  const handleNumberClick = (num) => {
-    if (checkingAuth || isShaking || passcode.length >= 4) return;
-    setAuthError('');
-    const nextPasscode = passcode + num;
-    setPasscode(nextPasscode);
-    if (nextPasscode.length === 4) {
-      submitPasscode(nextPasscode);
-    }
-  };
-
-  const handleDelete = () => {
-    if (checkingAuth || isShaking) return;
-    setPasscode(prev => prev.slice(0, -1));
-  };
-
-  const handleClear = () => {
-    if (checkingAuth || isShaking) return;
-    setPasscode('');
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) return;
-    const handleKeyDown = (e) => {
-      if (checkingAuth || isShaking) return;
-      if (e.key >= '0' && e.key <= '9') {
-        e.preventDefault();
-        handleNumberClick(e.key);
-      } else if (e.key === 'Backspace') {
-        e.preventDefault();
-        handleDelete();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        handleClear();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAuthenticated, passcode, checkingAuth, isShaking]);
+  // Passcode authentication completely removed
 
   // ── Sync ─────────────────────────────────────────────────────────────
   const fetchStatus = async () => {
@@ -145,6 +73,12 @@ export default function Dashboard() {
     setSentDates(data.sentDates || []);
     setSelectedDate(data.simMode ? data.simDate : data.realDate);
   };
+
+  useEffect(() => {
+    if (isAuthenticated && accessKey) {
+      fetchStatus();
+    }
+  }, [isAuthenticated, accessKey]);
 
   // ── Simulate ──────────────────────────────────────────────────────────
   const handleSimulate = async () => {
@@ -342,81 +276,7 @@ export default function Dashboard() {
 
   const activeDate = simMode ? simDate : realDate;
 
-  // ── Login screen ──────────────────────────────────────────────────────
-  if (!isAuthenticated) {
-    return (
-      <div className="gate">
-        <div className={`gate-form${isShaking ? ' shake' : ''}`}>
-          <div style={{ textAlign: 'center' }}>
-            <h1>B&A Operations</h1>
-            <p className="gate-sub">Enter passcode to unlock the dashboard</p>
-          </div>
-          
-          <div className="numpad-container">
-            {/* Dots indicator */}
-            <div className="numpad-dots">
-              {[0, 1, 2, 3].map((index) => {
-                let dotClass = 'numpad-dot';
-                if (isErrorState) {
-                  dotClass += ' error';
-                } else if (index < passcode.length) {
-                  dotClass += ' active';
-                }
-                return <div key={index} className={dotClass} />;
-              })}
-            </div>
-
-            {/* Error Message */}
-            {authError && (
-              <p className="error-text" style={{ minHeight: '1.25rem', marginBottom: '0.5rem', textAlign: 'center' }}>
-                {authError}
-              </p>
-            )}
-
-            {/* Grid */}
-            <div className="numpad-grid">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  className="numpad-btn"
-                  onClick={() => handleNumberClick(num)}
-                  disabled={checkingAuth || isShaking}
-                >
-                  {num}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="numpad-btn btn-action"
-                onClick={handleClear}
-                disabled={checkingAuth || isShaking || !passcode}
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                className="numpad-btn"
-                onClick={() => handleNumberClick('0')}
-                disabled={checkingAuth || isShaking}
-              >
-                0
-              </button>
-              <button
-                type="button"
-                className="numpad-btn btn-action"
-                onClick={handleDelete}
-                disabled={checkingAuth || isShaking || !passcode}
-                aria-label="Delete"
-              >
-                ⌫
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Passcode login screen removed
 
   // ── Main app ──────────────────────────────────────────────────────────
   return (
