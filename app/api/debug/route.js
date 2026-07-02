@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
-import { getVancouverDate } from '@/lib/digest';
+import { requireAccessKey } from '@/lib/auth';
+import { getBusinessDate } from '@/lib/digest';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
+  const denied = requireAccessKey(req);
+  if (denied) return denied;
 
   try {
     const birthdaysHash = await redis.hgetall('clients:birthdays') || {};
-    const renewalsHash = await redis.hgetall('clients:renewals') || {};
-
     const safeParseHash = (hash, type) => {
       const records = [];
       for (const [key, v] of Object.entries(hash)) {
@@ -24,7 +25,6 @@ export async function GET(req) {
     };
 
     const birthdays = safeParseHash(birthdaysHash, 'birthdays');
-    const renewals = safeParseHash(renewalsHash, 'renewals');
     const simMode = await redis.get('sim:mode');
     const simDate = await redis.get('sim:date');
     const sentKeys = await redis.keys('digest:sent:*') || [];
@@ -34,10 +34,9 @@ export async function GET(req) {
       success: true,
       simMode: simMode === 1 || simMode === '1',
       simDate: simDate || null,
-      realDate: getVancouverDate(),
+      realDate: getBusinessDate(),
       sentDates,
-      birthdays,
-      renewals
+      birthdays
     });
 
   } catch (error) {
@@ -47,6 +46,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const denied = requireAccessKey(req);
+  if (denied) return denied;
 
   try {
     const { action } = await req.json();
@@ -56,7 +57,7 @@ export async function POST(req) {
     }
 
     const sentKeys = await redis.keys('digest:sent:*') || [];
-    const keysToDelete = ['clients:birthdays', 'clients:renewals', 'sim:mode', 'sim:date', ...sentKeys];
+    const keysToDelete = ['clients:birthdays', 'sim:mode', 'sim:date', ...sentKeys];
 
     for (const key of keysToDelete) {
       await redis.del(key);

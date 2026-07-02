@@ -7,14 +7,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",
-    "next": "16.2.9",
+    "next": "16.2.10",
     "papaparse": "^5.5.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "twilio": "^6.0.2"
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }

@@ -1,24 +1,33 @@
 import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
+import { requireAccessKey } from '@/lib/auth';
 import {
   sanitizePhone,
   sanitizeDate,
   sanitizeName,
-  sanitizePolicyType
+  makeDedupKey
 } from '@/lib/sanitize';
 
+const MAX_RECORDS = 5000;
+
 export async function POST(req) {
+  const denied = requireAccessKey(req);
+  if (denied) return denied;
 
   try {
     const body = await req.json();
     const { type, records } = body;
 
-    if (!type || !['birthdays', 'renewals'].includes(type)) {
-      return NextResponse.json({ error: 'Invalid data type. Must be "birthdays" or "renewals".' }, { status: 400 });
+    if (type !== 'birthdays') {
+      return NextResponse.json({ error: 'Invalid data type. Birthday CSV import is the only supported import.' }, { status: 400 });
     }
 
     if (!Array.isArray(records)) {
       return NextResponse.json({ error: 'Records must be a valid array' }, { status: 400 });
+    }
+
+    if (records.length > MAX_RECORDS) {
+      return NextResponse.json({ error: `Too many records: ${records.length}. Max ${MAX_RECORDS} per upload.` }, { status: 400 });
     }
 
     const redisKey = `clients:${type}`;
@@ -52,45 +61,21 @@ export async function POST(req) {
         continue;
       }
 
-      if (type === 'birthdays') {
-        const rawBirthDate = normRec['birthdate'];
-        const birthDate = sanitizeDate(rawBirthDate);
-        const rawFileLink = normRec['clientfilelink'];
-        const fileLink = typeof rawFileLink === 'string' ? rawFileLink.trim() : (rawFileLink !== undefined && rawFileLink !== null ? String(rawFileLink).trim() : '');
+      const rawBirthDate = normRec['birthdate'];
+      const birthDate = sanitizeDate(rawBirthDate);
+      const rawFileLink = normRec['clientfilelink'];
+      const fileLink = typeof rawFileLink === 'string' ? rawFileLink.trim() : (rawFileLink !== undefined && rawFileLink !== null ? String(rawFileLink).trim() : '');
 
-        if (!birthDate) {
-          errors.push({ row: rowNum, reason: `Invalid or missing Birth Date: "${rawBirthDate || ''}". Accepted formats: YYYY-MM-DD, MM/DD/YYYY.` });
-          continue;
-        }
-
-        const dedupKey = `${lastName}|${firstName}|${phone}`.trim().toLowerCase();
-        const exists = await redis.hexists(redisKey, dedupKey);
-        if (exists) updated++; else added++;
-
-        await redis.hset(redisKey, { [dedupKey]: JSON.stringify({ firstName, lastName, phone, birthDate, email, clientFileLink: fileLink }) });
-
-      } else {
-        const rawRenewalDate = normRec['renewaldate'];
-        const renewalDate = sanitizeDate(rawRenewalDate);
-        const rawPolicyType = normRec['policytype'];
-        const policyType = sanitizePolicyType(rawPolicyType);
-
-        if (!policyType) {
-          errors.push({ row: rowNum, reason: `Invalid Policy Type: "${rawPolicyType || ''}". Must be Life Insurance, Home Insurance, Whole Life Policy, or Corporate.` });
-          continue;
-        }
-
-        if (!renewalDate) {
-          errors.push({ row: rowNum, reason: `Invalid or missing Renewal Date: "${rawRenewalDate || ''}". Accepted formats: YYYY-MM-DD, MM/DD/YYYY.` });
-          continue;
-        }
-
-        const dedupKey = `${lastName}|${firstName}|${phone}`.trim().toLowerCase();
-        const exists = await redis.hexists(redisKey, dedupKey);
-        if (exists) updated++; else added++;
-
-        await redis.hset(redisKey, { [dedupKey]: JSON.stringify({ firstName, lastName, policyType, renewalDate, email, phone }) });
+      if (!birthDate) {
+        errors.push({ row: rowNum, reason: `Invalid or missing Birth Date: "${rawBirthDate || ''}". Accepted formats: YYYY-MM-DD, MM/DD/YYYY.` });
+        continue;
       }
+
+      const dedupKey = makeDedupKey(firstName, lastName, phone);
+      const exists = await redis.hexists(redisKey, dedupKey);
+      if (exists) updated++; else added++;
+
+      await redis.hset(redisKey, { [dedupKey]: JSON.stringify({ firstName, lastName, phone, birthDate, email, clientFileLink: fileLink }) });
     }
 
     return NextResponse.json({ success: true, added, updated, errors });

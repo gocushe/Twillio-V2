@@ -1,17 +1,22 @@
 import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
-import { runDigest, getVancouverDate, addDays } from '@/lib/digest';
+import { requireAccessKey } from '@/lib/auth';
+import { runDigest, getBusinessDate, addDays } from '@/lib/digest';
 
 export async function POST(req) {
+  const denied = requireAccessKey(req);
+  if (denied) return denied;
 
   try {
     let requestDate = null;
     let action = null;
+    let dryRun = false;
     try {
       const reqBody = await req.json();
       if (reqBody) {
         requestDate = reqBody.date;
         action = reqBody.action;
+        dryRun = reqBody.dryRun === true || reqBody.mode === 'test';
       }
     } catch (e) {
       // Empty body — fallback to auto-increment
@@ -31,11 +36,11 @@ export async function POST(req) {
       await redis.set('sim:date', simDate);
     } else {
       let currentSimDate = await redis.get('sim:date');
-      simDate = currentSimDate ? addDays(currentSimDate, 1) : getVancouverDate();
+      simDate = currentSimDate ? addDays(currentSimDate, 1) : getBusinessDate();
       await redis.set('sim:date', simDate);
     }
 
-    const digestResult = await runDigest(false);
+    const digestResult = await runDigest(Boolean(requestDate), { dryRun });
 
     return NextResponse.json({ success: true, activeDate: simDate, digestResult });
 
